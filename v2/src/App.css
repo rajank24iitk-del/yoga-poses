@@ -1,8 +1,15 @@
 :root {
-  color: #221e1a;
-  background: #f3efe6;
+  color: #3d2418;
+  background: #ef8a32;
   font-family: Outfit, "Segoe UI", sans-serif;
   line-height: 1.45;
+  --paper: #ef8a32;
+  --ink: #3d2418;
+  --muted: #6b3010;
+  --accent: #c45a12;
+  --button-ink: #fff6ee;
+  --camera: #e07020;
+  --track: #f2b56a;
 }
 
 * { box-sizing: border-box; }
@@ -25,32 +32,8 @@ h1 {
 
 .shell {
   min-height: 100vh;
-}
-
-.tanpura-dock {
-  width: min(1080px, calc(100% - 40px));
-  margin: 0 auto;
-  padding-bottom: 36px;
-}
-
-.tanpura-dock p {
-  margin: 0 0 8px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-size: 0.72rem;
-  color: #8a8175;
-}
-
-.tanpura-frame {
-  width: min(100%, 420px);
-  aspect-ratio: 16 / 9;
-  background: #1c1916;
-}
-
-.tanpura-frame iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
+  color: var(--ink);
+  background: var(--paper);
 }
 
 .home, .practice {
@@ -68,6 +51,12 @@ h1 {
   gap: 16px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .practice-top { flex-wrap: wrap; }
 
 .edition, .sanskrit, .subtitle, .note, .status, figcaption, .meter p {
@@ -78,12 +67,12 @@ h1 {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   font-size: 0.72rem;
-  color: #8a8175;
+  color: var(--muted);
 }
 
 .sanskrit {
   margin-top: 48px;
-  color: #8d5a32;
+  color: var(--muted);
   letter-spacing: 0.08em;
 }
 
@@ -94,7 +83,7 @@ h1 {
   font-family: "Cormorant Garamond", Georgia, serif;
   font-style: italic;
   font-size: 1.7rem;
-  color: #5e564c;
+  color: var(--ink);
 }
 
 .portrait {
@@ -105,7 +94,7 @@ h1 {
   width: min(100%, 380px);
   height: auto;
   display: block;
-  background: #fff;
+  background: var(--paper);
 }
 
 .practice-portrait img {
@@ -122,14 +111,14 @@ figcaption {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-size: 0.72rem;
-  color: #8a8175;
+  color: var(--muted);
 }
 
 .begin {
   margin-top: 18px;
-  border: 1px solid #221e1a;
-  background: #221e1a;
-  color: #f3efe6;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--button-ink);
   padding: 12px 28px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -140,7 +129,7 @@ figcaption {
 .text-button {
   border: 0;
   background: transparent;
-  color: #5e564c;
+  color: var(--ink);
   padding: 0;
   cursor: pointer;
   letter-spacing: 0.08em;
@@ -151,7 +140,7 @@ figcaption {
 .note, .status, .meter p {
   max-width: 36rem;
   margin-top: 22px;
-  color: #5e564c;
+  color: var(--ink);
 }
 
 .stage {
@@ -175,7 +164,7 @@ figcaption {
 .camera {
   width: 100%;
   border-radius: 6px;
-  background: #1c1916;
+  background: var(--camera);
   aspect-ratio: 4 / 3;
   display: block;
 }
@@ -200,19 +189,162 @@ figcaption {
 }
 
 .track {
-  height: 2px;
+  display: flex;
+  justify-content: flex-end;
+  height: 10px;
   margin-top: 8px;
-  background: #ddd4c6;
+  border-radius: 999px;
+  background: var(--track);
+  overflow: hidden;
 }
 
 .fill {
   height: 100%;
   width: 0;
-  background: #221e1a;
+  background: var(--accent);
 }
 
-.meter.good .fill { background: #1f7a45; }
-.meter.good strong { color: #1f7a45; }
+.meter.good .fill { background: #145c32; }
+.meter.good strong { color: #145c32; }
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.settings-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(40, 24, 16, 0.35);
+}
+
+.settings {
+  width: min(420px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: 22px;
+  border-radius: 8px;
+  background: #fff8f2;
+  color: #3d2418;
+}
+
+.settings h2 {
+  margin: 0;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 2rem;
+  font-weight: 500;
+}
+
+.settings-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.settings .text-button { color: #3d2418; }
+
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.setting p {
+  margin: 0;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stepper strong {
+  min-width: 7.2rem;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.4rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.stepper button, .switch {
+  border: 1px solid #c45a12;
+  background: #fff8f2;
+  color: #3d2418;
+  cursor: pointer;
+}
+
+.stepper button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+}
+
+.stepper button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.switch {
+  min-width: 72px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.switch[aria-checked="true"] {
+  background: #c45a12;
+  color: #fff6ee;
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 520px) {
+  .setting {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .swatches { justify-content: flex-start; }
+}
+
+.swatch {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  padding: 8px 12px;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+}
+
+.swatch.chosen { border-color: #3d2418; }
 
 @media (min-width: 860px) {
   .stage {

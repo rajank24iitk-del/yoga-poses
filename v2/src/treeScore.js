@@ -1,4 +1,4 @@
-export const HOLD_MS = 15000
+export const HOLD_MS = 10000
 export const GRACE_MS = 400
 
 const NOSE = 0
@@ -132,14 +132,14 @@ export function scoreTree(landmarks) {
   }
 }
 
-export function stepHold(holdMs, missMs, matched, dt) {
+export function stepHold(holdMs, missMs, matched, dt, limit = HOLD_MS) {
   if (matched) {
-    const next = Math.min(HOLD_MS, holdMs + dt)
-    return { holdMs: next, missMs: 0, matched: true, done: next >= HOLD_MS }
+    const next = Math.min(limit, holdMs + dt)
+    return { holdMs: next, missMs: 0, matched: true, done: next >= limit }
   }
   const miss = missMs + dt
   if (holdMs > 0 && miss < GRACE_MS) {
-    return { holdMs, missMs: miss, matched: true, done: holdMs >= HOLD_MS }
+    return { holdMs, missMs: miss, matched: true, done: holdMs >= limit }
   }
   return { holdMs: 0, missMs: 0, matched: false, done: false }
 }

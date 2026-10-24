@@ -1,0 +1,22 @@
+{
+  "name": "Vrikshasanam",
+  "short_name": "Vrikshasanam",
+  "description": "The tree pose, with a camera and a hold timer.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ef8a32",
+  "theme_color": "#ef8a32",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
