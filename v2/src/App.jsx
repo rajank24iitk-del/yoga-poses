@@ -1,12 +1,16 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Session from './Session'
 import { createTanpura } from './tanpura'
 
 export default function App() {
   const tanpura = useRef(null)
-  if (!tanpura.current) tanpura.current = createTanpura()
+  if (!tanpura.current) tanpura.current = createTanpura('tanpura-player')
   const [screen, setScreen] = useState('home')
   const [music, setMusic] = useState(false)
+
+  useEffect(() => {
+    tanpura.current.mount()
+  }, [])
 
   async function toggleMusic() {
     if (music) {
@@ -51,6 +55,12 @@ export default function App() {
           onExit={() => setScreen('home')}
         />
       )}
+      <section className="tanpura-dock" aria-label="C sharp tanpura">
+        <p>C# tanpura</p>
+        <div className="tanpura-frame">
+          <div id="tanpura-player" />
+        </div>
+      </section>
     </div>
   )
 }
