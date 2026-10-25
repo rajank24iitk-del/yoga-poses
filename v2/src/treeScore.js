@@ -137,6 +137,17 @@ export function scoreTree(landmarks) {
     footLifted: legDetail.lifted,
     kneeOut: legDetail.kneeOut,
     bentAngle: Math.round(legDetail.bentAngle),
+    checks: [
+      { name: 'Torso upright', ok: upright },
+      { name: 'Standing leg', ok: legDetail.straight },
+      { name: 'Knee bent', ok: legDetail.bentOk, detail: `${Math.round(legDetail.bentAngle)}°` },
+      { name: 'Foot on thigh', ok: legDetail.onThigh },
+      { name: 'Foot lifted', ok: legDetail.lifted },
+      { name: 'Knee out', ok: legDetail.kneeOut },
+      { name: 'Arms raised', ok: armsUp },
+      { name: 'Hands together', ok: handsClose },
+      { name: 'Elbows straight', ok: elbowsStraight, detail: `${Math.round(leftElbowAngle)}°/${Math.round(rightElbowAngle)}°` },
+    ],
   }
 
   return {

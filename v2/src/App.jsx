@@ -276,6 +276,29 @@ export default function App() {
     setPoseId(queue[step + 1])
   }
 
+  function navigableList() {
+    if (queue) return null
+    if (mode === 'alphabetical') return alphabetical()
+    return ASANAS.slice(0, 7)
+  }
+
+  function navigatePose(direction) {
+    if (queue) {
+      const next = step + direction
+      if (next < 0 || next >= queue.length) return
+      setHeld(false)
+      setStep(next)
+      setPoseId(queue[next])
+      return
+    }
+    const list = navigableList()
+    if (!list) return
+    const idx = list.findIndex((a) => a.id === poseId)
+    const next = (idx + direction + list.length) % list.length
+    setHeld(false)
+    setPoseId(list[next].id)
+  }
+
   const pose = asanaById(poseId)
   const baseTheme = THEMES[theme] || THEMES.gold
   const isGreen = (held && screen === 'practice') || theme === 'emerald'
@@ -452,6 +475,8 @@ export default function App() {
           onComplete={queue ? nextInSequence : null}
           tanpuraPlayer={tanpura.current}
           dingOn={dingOn}
+          onPrev={queue ? (step > 0 ? () => navigatePose(-1) : null) : () => navigatePose(-1)}
+          onNext={queue ? (step < queue.length - 1 ? () => navigatePose(1) : null) : () => navigatePose(1)}
           music={playing}
           onToggleMusic={() => setTanpura(!playing)}
           onExit={() => {

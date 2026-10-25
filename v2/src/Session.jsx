@@ -70,46 +70,36 @@ function drawRing(ctx, w, h, progress, matched, total, holdSec) {
   ctx.font = `bold ${Math.max(28, w / 14)}px Outfit, sans-serif`
   ctx.textAlign = 'right'
   ctx.textBaseline = 'top'
-  ctx.fillStyle = matched ? '#5ef29e' : '#ffd470'
-  ctx.shadowColor = 'rgba(0,0,0,0.7)'
-  ctx.shadowBlur = 6
+  ctx.strokeStyle = '#ffffff'
+  ctx.lineWidth = 4
+  ctx.lineJoin = 'round'
+  ctx.strokeText(`${holdSec} / ${total}`, w - 24, 24)
+  ctx.fillStyle = '#000000'
   ctx.fillText(`${holdSec} / ${total}`, w - 24, 24)
   ctx.restore()
 }
 
 function drawDebug(ctx, w, h, debug, matched) {
   if (!debug || matched) return
+  const checks = debug.checks || []
+  if (checks.length === 0) return
   ctx.save()
   const fontSize = Math.max(22, w / 26)
-  ctx.font = `${fontSize}px Outfit, sans-serif`
+  ctx.font = `bold ${fontSize}px Outfit, sans-serif`
   ctx.textBaseline = 'top'
   ctx.textAlign = 'right'
-  ctx.shadowColor = 'rgba(0,0,0,0.8)'
-  ctx.shadowBlur = 4
-  const lines = []
-  lines.push(`Torso ${debug.upright ? '✓' : '✗'}`)
-  let legLine = `Legs ${debug.legs ? '✓' : '✗'}`
-  if (!debug.legs) {
-    if (!debug.legStraight) legLine += ' bent'
-    if (!debug.footOnThigh) legLine += ' foot off'
-    if (!debug.footLifted) legLine += ' low'
-    if (!debug.kneeOut) legLine += ' knee in'
-  }
-  lines.push(legLine)
-  let armLine = `Arms ${debug.arms ? '✓' : '✗'}`
-  if (!debug.arms) {
-    if (!debug.armsUp) armLine += ' low'
-    if (!debug.handsClose) armLine += ' apart'
-    if (!debug.elbowsStraight) armLine += ` ${debug.leftElbow}°/${debug.rightElbow}°`
-  }
-  lines.push(armLine)
   const lh = fontSize * 1.35
   const timerFontSize = Math.max(28, w / 14)
   let y = 24 + timerFontSize + 12
-  for (let i = 0; i < lines.length; i++) {
-    const ok = lines[i].includes('✓')
-    ctx.fillStyle = ok ? '#7ef5b2' : '#ff9a6a'
-    ctx.fillText(lines[i], w - 24, y)
+  for (const check of checks) {
+    let text = `${check.name} ${check.ok ? '✓' : '✗'}`
+    if (!check.ok && check.detail) text += ` ${check.detail}`
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 3
+    ctx.lineJoin = 'round'
+    ctx.strokeText(text, w - 24, y)
+    ctx.fillStyle = check.ok ? '#007700' : '#cc0000'
+    ctx.fillText(text, w - 24, y)
     y += lh
   }
   ctx.restore()
@@ -117,12 +107,14 @@ function drawDebug(ctx, w, h, debug, matched) {
 
 function drawMessage(ctx, w, h, message, matched) {
   ctx.save()
-  ctx.font = `${Math.max(24, w / 22)}px Outfit, sans-serif`
+  ctx.font = `bold ${Math.max(24, w / 22)}px Outfit, sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'bottom'
-  ctx.fillStyle = matched ? '#c4f5d4' : '#f5d293'
-  ctx.shadowColor = 'rgba(0,0,0,0.8)'
-  ctx.shadowBlur = 6
+  ctx.strokeStyle = '#ffffff'
+  ctx.lineWidth = 4
+  ctx.lineJoin = 'round'
+  ctx.strokeText(message, w / 2, h - 20)
+  ctx.fillStyle = '#000000'
   ctx.fillText(message, w / 2, h - 20)
   ctx.restore()
 }
@@ -285,15 +277,34 @@ function playDing(audioCtx) {
   })
 }
 
-function speak(text) {
+function getVoices() {
   return new Promise((resolve) => {
-    if (!window.speechSynthesis) { resolve(); return }
+    const voices = speechSynthesis.getVoices()
+    if (voices.length > 0) { resolve(voices); return }
+    let done = false
+    function handler() {
+      if (done) return
+      done = true
+      speechSynthesis.removeEventListener('voiceschanged', handler)
+      resolve(speechSynthesis.getVoices())
+    }
+    speechSynthesis.addEventListener('voiceschanged', handler)
+    setTimeout(handler, 2000)
+  })
+}
+
+async function speak(text) {
+  if (!window.speechSynthesis) return
+  speechSynthesis.cancel()
+  const voices = await getVoices()
+  return new Promise((resolve) => {
     const utt = new SpeechSynthesisUtterance(text)
     utt.lang = 'en-IN'
     utt.pitch = 1.1
     utt.rate = 0.9
-    const voices = speechSynthesis.getVoices()
+    utt.volume = 1.0
     const female = voices.find((v) => /female|samantha|zira|google.*uk.*female|veena|rishi/i.test(v.name) && v.lang.startsWith('en'))
+      || voices.find((v) => v.lang.startsWith('en'))
     if (female) utt.voice = female
     utt.onend = resolve
     utt.onerror = resolve
@@ -302,7 +313,7 @@ function speak(text) {
   })
 }
 
-export default function Session({ pose, step = 0, position, onComplete, tanpuraPlayer, dingOn = true, music, onToggleMusic, onExit, onOpenSettings, holdMs, dotColor, onHeldChange }) {
+export default function Session({ pose, step = 0, position, onComplete, tanpuraPlayer, dingOn = true, music, onToggleMusic, onExit, onOpenSettings, onPrev, onNext, holdMs, dotColor, onHeldChange }) {
   const wasHeldRef = useRef(false)
   const completeRef = useRef(onComplete)
   completeRef.current = onComplete
@@ -547,6 +558,16 @@ export default function Session({ pose, step = 0, position, onComplete, tanpuraP
         <div className="camera-wrap">
           <video ref={videoRef} className="camera-source" autoPlay playsInline muted />
           <canvas ref={canvasRef} className="camera" />
+          {onPrev && (
+            <button className="nav-arrow nav-prev" type="button" aria-label="Previous asana" onClick={onPrev}>
+              <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M15 19l-7-7 7-7z" /></svg>
+            </button>
+          )}
+          {onNext && (
+            <button className="nav-arrow nav-next" type="button" aria-label="Next asana" onClick={onNext}>
+              <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M9 5l7 7-7 7z" /></svg>
+            </button>
+          )}
         </div>
         <figure className="portrait practice-portrait">
           <img src={`${import.meta.env.BASE_URL}${pose.image}`} alt={`Reference for ${pose.name}`} />

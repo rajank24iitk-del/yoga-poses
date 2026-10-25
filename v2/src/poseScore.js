@@ -55,9 +55,14 @@ function angle(a, b, c) {
   return (Math.acos(cos) * 180) / Math.PI
 }
 
-function finish(checks) {
-  const score = checks.filter(Boolean).length / checks.length
-  return { matched: checks.every(Boolean), score, visible: true }
+function result(checks) {
+  const score = checks.filter((c) => c.ok).length / checks.length
+  return {
+    matched: checks.every((c) => c.ok),
+    score,
+    visible: true,
+    debug: { checks },
+  }
 }
 
 function hidden() {
@@ -93,7 +98,14 @@ function scoreChair(frame) {
   const upright = shoulders.y < hips.y - torso * 0.12
   const armsUp = at(LEFT_WRIST).y < nose.y && at(RIGHT_WRIST).y < nose.y
   const armsStraight = leftElbow > 130 && rightElbow > 130
-  return finish([kneesBent, feetDown, feetLevel, upright, armsUp, armsStraight])
+  return result([
+    { name: 'Knees bent', ok: kneesBent, detail: `${Math.round(leftKnee)}°/${Math.round(rightKnee)}°` },
+    { name: 'Feet grounded', ok: feetDown },
+    { name: 'Feet level', ok: feetLevel },
+    { name: 'Torso upright', ok: upright },
+    { name: 'Arms raised', ok: armsUp },
+    { name: 'Arms straight', ok: armsStraight, detail: `${Math.round(leftElbow)}°/${Math.round(rightElbow)}°` },
+  ])
 }
 
 function scoreCobra(frame) {
@@ -105,7 +117,13 @@ function scoreCobra(frame) {
   const handsDown = at(LEFT_WRIST).y > shoulders.y - torso * 0.08
     && at(RIGHT_WRIST).y > shoulders.y - torso * 0.08
   const armsSupport = leftElbow > 80 && rightElbow > 80
-  return finish([chestUp, legsBack, legsStraight, handsDown, armsSupport])
+  return result([
+    { name: 'Chest lifted', ok: chestUp },
+    { name: 'Legs extended', ok: legsBack },
+    { name: 'Legs straight', ok: legsStraight, detail: `${Math.round(leftKnee)}°/${Math.round(rightKnee)}°` },
+    { name: 'Hands placed', ok: handsDown },
+    { name: 'Arms support', ok: armsSupport, detail: `${Math.round(leftElbow)}°/${Math.round(rightElbow)}°` },
+  ])
 }
 
 function scoreDog(frame) {
@@ -115,7 +133,12 @@ function scoreDog(frame) {
   const legsStraight = leftKnee > 135 && rightKnee > 135
   const armsStraight = leftElbow > 140 && rightElbow > 140
   const handsDown = at(LEFT_WRIST).y > shoulders.y && at(RIGHT_WRIST).y > shoulders.y
-  return finish([hipsHigh, legsStraight, armsStraight, handsDown])
+  return result([
+    { name: 'Hips high', ok: hipsHigh },
+    { name: 'Legs straight', ok: legsStraight, detail: `${Math.round(leftKnee)}°/${Math.round(rightKnee)}°` },
+    { name: 'Arms straight', ok: armsStraight, detail: `${Math.round(leftElbow)}°/${Math.round(rightElbow)}°` },
+    { name: 'Hands down', ok: handsDown },
+  ])
 }
 
 function warriorSide(standHip, standKnee, standAnkle, freeHip, freeKnee, freeAnkle, shoulders, torso, kneeStand, kneeFree) {
@@ -128,7 +151,7 @@ function warriorSide(standHip, standKnee, standAnkle, freeHip, freeKnee, freeAnk
 }
 
 function scoreWarrior(frame) {
-  const { at, shoulders, torso, leftKnee, rightKnee, leftElbow, rightElbow } = frame
+  const { at, shoulders, hips, torso, leftKnee, rightKnee, leftElbow, rightElbow } = frame
   const leftStands = warriorSide(
     at(LEFT_HIP), at(LEFT_KNEE), at(LEFT_ANKLE),
     at(RIGHT_HIP), at(RIGHT_KNEE), at(RIGHT_ANKLE),
@@ -140,10 +163,13 @@ function scoreWarrior(frame) {
     shoulders, torso, rightKnee, leftKnee,
   )
   const wrists = mid(at(LEFT_WRIST), at(RIGHT_WRIST))
-  const armsForward = wrists.y < frame.hips.y
+  const armsForward = wrists.y < hips.y
     && Math.abs(wrists.y - shoulders.y) < torso * 0.75
     && leftElbow > 140 && rightElbow > 140
-  return finish([leftStands || rightStands, armsForward])
+  return result([
+    { name: 'Warrior stance', ok: leftStands || rightStands },
+    { name: 'Arms forward', ok: armsForward, detail: `${Math.round(leftElbow)}°/${Math.round(rightElbow)}°` },
+  ])
 }
 
 function scoreShoulderstand(frame) {
@@ -157,7 +183,13 @@ function scoreShoulderstand(frame) {
     && at(RIGHT_WRIST).y > hips.y - torso * 0.15
     && at(LEFT_WRIST).y < shoulders.y + torso * 0.2
     && at(RIGHT_WRIST).y < shoulders.y + torso * 0.2
-  return finish([legsUp, hipsUp, legsStraight, armsBent, handsSupport])
+  return result([
+    { name: 'Legs raised', ok: legsUp },
+    { name: 'Hips elevated', ok: hipsUp },
+    { name: 'Legs straight', ok: legsStraight, detail: `${Math.round(leftKnee)}°/${Math.round(rightKnee)}°` },
+    { name: 'Arms support', ok: armsBent, detail: `${Math.round(leftElbow)}°/${Math.round(rightElbow)}°` },
+    { name: 'Hands on back', ok: handsSupport },
+  ])
 }
 
 function scoreTriangle(frame) {
@@ -170,7 +202,14 @@ function scoreTriangle(frame) {
   const oneDown = low.y > hips.y - torso * 0.05
   const oneUp = high.y < Math.min(at(LEFT_SHOULDER).y, at(RIGHT_SHOULDER).y)
   const sideBend = Math.abs(at(LEFT_SHOULDER).y - at(RIGHT_SHOULDER).y) > torso * 0.1
-  return finish([legsStraight, wide, feetDown, oneDown, oneUp, sideBend])
+  return result([
+    { name: 'Legs straight', ok: legsStraight, detail: `${Math.round(leftKnee)}°/${Math.round(rightKnee)}°` },
+    { name: 'Wide stance', ok: wide },
+    { name: 'Feet grounded', ok: feetDown },
+    { name: 'Arm reaching down', ok: oneDown },
+    { name: 'Arm reaching up', ok: oneUp },
+    { name: 'Side bend', ok: sideBend },
+  ])
 }
 
 function scorePrayer(frame) {
@@ -181,7 +220,13 @@ function scorePrayer(frame) {
   const joined = dist(at(LEFT_WRIST), at(RIGHT_WRIST)) < torso * 0.5
   const atChest = wrists.y > shoulders.y - torso * 0.1 && wrists.y < hips.y
   const bent = leftElbow < 140 && rightElbow < 140
-  return finish([standing, upright, joined, atChest, bent])
+  return result([
+    { name: 'Standing tall', ok: standing, detail: `${Math.round(leftKnee)}°/${Math.round(rightKnee)}°` },
+    { name: 'Torso upright', ok: upright },
+    { name: 'Hands joined', ok: joined },
+    { name: 'Hands at chest', ok: atChest },
+    { name: 'Elbows bent', ok: bent, detail: `${Math.round(leftElbow)}°/${Math.round(rightElbow)}°` },
+  ])
 }
 
 function scoreRaisedArms(frame) {
@@ -191,7 +236,13 @@ function scoreRaisedArms(frame) {
   const armsUp = at(LEFT_WRIST).y < nose.y && at(RIGHT_WRIST).y < nose.y
   const straight = leftElbow > 140 && rightElbow > 140
   const feetTogether = dist(at(LEFT_ANKLE), at(RIGHT_ANKLE)) < torso * 0.9
-  return finish([standing, upright, armsUp, straight, feetTogether])
+  return result([
+    { name: 'Standing tall', ok: standing, detail: `${Math.round(leftKnee)}°/${Math.round(rightKnee)}°` },
+    { name: 'Torso upright', ok: upright },
+    { name: 'Arms raised', ok: armsUp },
+    { name: 'Arms straight', ok: straight, detail: `${Math.round(leftElbow)}°/${Math.round(rightElbow)}°` },
+    { name: 'Feet together', ok: feetTogether },
+  ])
 }
 
 function scoreForwardFold(frame) {
@@ -199,7 +250,11 @@ function scoreForwardFold(frame) {
   const legsStraight = leftKnee > 140 && rightKnee > 140
   const folded = shoulders.y > hips.y + torso * 0.2
   const handsLow = at(LEFT_WRIST).y > hips.y + torso * 0.35 && at(RIGHT_WRIST).y > hips.y + torso * 0.35
-  return finish([legsStraight, folded, handsLow])
+  return result([
+    { name: 'Legs straight', ok: legsStraight, detail: `${Math.round(leftKnee)}°/${Math.round(rightKnee)}°` },
+    { name: 'Torso folded', ok: folded },
+    { name: 'Hands reaching down', ok: handsLow },
+  ])
 }
 
 function scoreLunge(frame) {
@@ -211,7 +266,13 @@ function scoreLunge(frame) {
   const split = Math.abs(at(LEFT_ANKLE).x - at(RIGHT_ANKLE).x) > torso * 0.9
   const chestUp = shoulders.y < hips.y
   const handsDown = at(LEFT_WRIST).y > hips.y && at(RIGHT_WRIST).y > hips.y
-  return finish([oneBent, oneStraight, split, chestUp, handsDown])
+  return result([
+    { name: 'Front knee bent', ok: oneBent, detail: `${Math.round(bent)}°` },
+    { name: 'Back leg straight', ok: oneStraight, detail: `${Math.round(straight)}°` },
+    { name: 'Feet apart', ok: split },
+    { name: 'Chest lifted', ok: chestUp },
+    { name: 'Hands grounded', ok: handsDown },
+  ])
 }
 
 function scorePlank(frame) {
@@ -222,7 +283,13 @@ function scorePlank(frame) {
     && at(RIGHT_WRIST).y > shoulders.y + torso * 0.3
   const legsStraight = leftKnee > 145 && rightKnee > 145
   const long = Math.abs(shoulders.x - hips.x) > torso * 0.6
-  return finish([armsStraight, level, handsDown, legsStraight, long])
+  return result([
+    { name: 'Arms straight', ok: armsStraight, detail: `${Math.round(leftElbow)}°/${Math.round(rightElbow)}°` },
+    { name: 'Body level', ok: level },
+    { name: 'Hands planted', ok: handsDown },
+    { name: 'Legs straight', ok: legsStraight, detail: `${Math.round(leftKnee)}°/${Math.round(rightKnee)}°` },
+    { name: 'Body extended', ok: long },
+  ])
 }
 
 function scoreEightLimbs(frame) {
@@ -232,7 +299,12 @@ function scoreEightLimbs(frame) {
   const elbowsBent = leftElbow < 120 && rightElbow < 120
   const handsDown = at(LEFT_WRIST).y > shoulders.y - torso * 0.1
     && at(RIGHT_WRIST).y > shoulders.y - torso * 0.1
-  return finish([kneesBent, hipsUp, elbowsBent, handsDown])
+  return result([
+    { name: 'Knees bent', ok: kneesBent, detail: `${Math.round(leftKnee)}°/${Math.round(rightKnee)}°` },
+    { name: 'Hips raised', ok: hipsUp },
+    { name: 'Elbows bent', ok: elbowsBent, detail: `${Math.round(leftElbow)}°/${Math.round(rightElbow)}°` },
+    { name: 'Hands placed', ok: handsDown },
+  ])
 }
 
 const SCORERS = {
