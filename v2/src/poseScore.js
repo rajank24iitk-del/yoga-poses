@@ -33,7 +33,7 @@ const BODY = [
 function seen(spot) {
   if (!spot) return false
   const score = spot.visibility ?? spot.score ?? 0
-  return score >= 0.5 && Number.isFinite(spot.x) && Number.isFinite(spot.y)
+  return score >= 0.15 && Number.isFinite(spot.x) && Number.isFinite(spot.y)
 }
 
 function dist(a, b) {
@@ -66,7 +66,8 @@ function hidden() {
 
 function read(landmarks) {
   if (!landmarks || landmarks.length < 33) return null
-  if (!BODY.every((index) => seen(landmarks[index]))) return null
+  const weak = BODY.filter((index) => !seen(landmarks[index])).length
+  if (weak > 3) return null
   const at = (index) => landmarks[index]
   const shoulders = mid(at(LEFT_SHOULDER), at(RIGHT_SHOULDER))
   const hips = mid(at(LEFT_HIP), at(RIGHT_HIP))

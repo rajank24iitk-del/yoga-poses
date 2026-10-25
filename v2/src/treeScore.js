@@ -38,7 +38,7 @@ function point(landmarks, index) {
 function seen(spot) {
   if (!spot) return false
   const score = spot.visibility ?? spot.score ?? 0
-  return score >= 0.4 && Number.isFinite(spot.x) && Number.isFinite(spot.y)
+  return score >= 0.15 && Number.isFinite(spot.x) && Number.isFinite(spot.y)
 }
 
 function dist(a, b) {
@@ -76,8 +76,9 @@ export function scoreTree(landmarks) {
     return { matched: false, score: 0, visible: false }
   }
   const spots = NEEDED.map((index) => point(landmarks, index))
-  if (!spots.every(seen)) {
-    return { matched: false, score: 0, visible: false, reason: 'body not visible' }
+  const weak = spots.filter((spot) => !seen(spot)).length
+  if (weak > 3) {
+    return { matched: false, score: 0, visible: false, reason: `${weak} joints not visible` }
   }
 
   const shoulders = mid(point(landmarks, LEFT_SHOULDER), point(landmarks, RIGHT_SHOULDER))
