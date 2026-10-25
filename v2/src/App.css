@@ -163,6 +163,10 @@ h1 {
   margin: 28px auto 12px;
 }
 
+.status .retry {
+  margin-top: 10px;
+}
+
 .mode-picker {
   display: flex;
   flex-direction: column;
@@ -542,7 +546,7 @@ h1 {
 .subtitle {
   margin-top: 2px;
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-style: italic;
+  font-style: normal;
   font-size: 1.35rem;
   color: var(--muted);
 }

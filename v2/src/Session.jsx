@@ -69,6 +69,52 @@ function drawScene(ctx, video, landmarks, matched) {
   ctx.restore()
 }
 
+async function openCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    const error = new Error('no mediaDevices')
+    error.name = 'NoMediaDevices'
+    throw error
+  }
+  const tries = [
+    { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+    { video: { facingMode: 'user' }, audio: false },
+    { video: true, audio: false },
+  ]
+  let lastError
+  for (const constraints of tries) {
+    try {
+      return await navigator.mediaDevices.getUserMedia(constraints)
+    } catch (error) {
+      lastError = error
+      if (error?.name === 'NotAllowedError' || error?.name === 'SecurityError') break
+    }
+  }
+  throw lastError
+}
+
+function cameraMessage(error) {
+  switch (error?.name) {
+    case 'NotAllowedError':
+    case 'PermissionDeniedError':
+    case 'SecurityError':
+      return 'The camera is blocked. On the iPad open Settings, then Safari, then Camera, and choose Ask or Allow. Close the app, open it again, and tap Allow.'
+    case 'NotFoundError':
+    case 'OverconstrainedError':
+      return 'No camera was found on this device.'
+    case 'NotReadableError':
+    case 'AbortError':
+      return 'The camera is busy. Close other apps or Safari tabs that use the camera, then tap Start camera.'
+    case 'NoMediaDevices':
+      return 'This page cannot use the camera here. Open it from the https address in Safari.'
+    default:
+      return `The camera could not start. ${error?.message || ''}`.trim()
+  }
+}
+
+function modelMessage(error) {
+  return `The pose model could not load. It needs the internet the first time. Check the connection and tap Start camera. ${error?.message || ''}`.trim()
+}
+
 export default function Session({ pose, step = 0, position, onComplete, music, onToggleMusic, onExit, onOpenSettings, holdMs, dotColor, onHeldChange }) {
   const wasHeldRef = useRef(false)
   const completeRef = useRef(onComplete)
@@ -86,6 +132,8 @@ export default function Session({ pose, step = 0, position, onComplete, music, o
   poseRef.current = pose
   const [status, setStatus] = useState('loading')
   const [detail, setDetail] = useState('')
+  const [phase, setPhase] = useState('Starting the camera.')
+  const startRef = useRef(null)
   const [view, setView] = useState({
     holdMs: 0,
     matched: false,
@@ -106,40 +154,64 @@ export default function Session({ pose, step = 0, position, onComplete, music, o
     wasHeldRef.current = false
     holdRef.current = { holdMs: 0, missMs: 0 }
 
+    let starting = false
+    let running = false
+
     async function start() {
+      if (starting || running || stopped) return
+      starting = true
+      let step = 'camera'
+      setStatus('loading')
+      setDetail('')
+      setPhase('Starting the camera. Tap Allow if the iPad asks.')
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false,
-        })
+        stream?.getTracks().forEach((track) => track.stop())
+        stream = await openCamera()
+        video.muted = true
+        video.setAttribute('muted', '')
+        video.setAttribute('playsinline', '')
+        video.setAttribute('webkit-playsinline', '')
         video.srcObject = stream
-        await video.play()
-        const vision = await FilesetResolver.forVisionTasks(WASM)
         try {
-          landmarker = await PoseLandmarker.createFromOptions(vision, {
-            baseOptions: { modelAssetPath: MODEL, delegate: 'GPU' },
-            runningMode: 'VIDEO',
-            numPoses: 1,
-          })
-        } catch {
-          landmarker = await PoseLandmarker.createFromOptions(vision, {
-            baseOptions: { modelAssetPath: MODEL, delegate: 'CPU' },
-            runningMode: 'VIDEO',
-            numPoses: 1,
-          })
+          await video.play()
+        } catch (playError) {
+          console.warn('video.play was refused, continuing', playError)
+        }
+        if (stopped) return
+        step = 'model'
+        setPhase('Loading the 33-point pose model. This needs the internet the first time.')
+        if (!landmarker) {
+          const vision = await FilesetResolver.forVisionTasks(WASM)
+          try {
+            landmarker = await PoseLandmarker.createFromOptions(vision, {
+              baseOptions: { modelAssetPath: MODEL, delegate: 'GPU' },
+              runningMode: 'VIDEO',
+              numPoses: 1,
+            })
+          } catch {
+            landmarker = await PoseLandmarker.createFromOptions(vision, {
+              baseOptions: { modelAssetPath: MODEL, delegate: 'CPU' },
+              runningMode: 'VIDEO',
+              numPoses: 1,
+            })
+          }
         }
         if (stopped) return
         setStatus('')
+        running = true
         last = performance.now()
         requestAnimationFrame(loop)
       } catch (error) {
         console.error(error)
         if (!stopped) {
-          setDetail(error?.message || 'Unknown error')
+          setDetail(step === 'camera' ? cameraMessage(error) : modelMessage(error))
           setStatus('error')
         }
+      } finally {
+        starting = false
       }
     }
+    startRef.current = start
 
     function loop(now) {
       if (stopped) return
@@ -227,12 +299,19 @@ export default function Session({ pose, step = 0, position, onComplete, music, o
         </div>
       </header>
 
-      {status === 'loading' && <p className="status">Opening the camera and the 33-point model.</p>}
-      {status === 'error' && <p className="status">The camera or the pose model could not start. {detail}</p>}
+      {status === 'loading' && <p className="status">{phase}</p>}
+      {status === 'error' && (
+        <div className="status">
+          <p>{detail}</p>
+          <button className="text-button retry" type="button" onClick={() => startRef.current?.()}>
+            Start camera
+          </button>
+        </div>
+      )}
 
       <div className="stage">
         <div className="camera-wrap">
-          <video ref={videoRef} className="camera-source" playsInline muted />
+          <video ref={videoRef} className="camera-source" autoPlay playsInline muted />
           <canvas ref={canvasRef} className="camera" />
         </div>
         <figure className="portrait practice-portrait">
