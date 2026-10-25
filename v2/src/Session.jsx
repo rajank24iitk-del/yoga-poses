@@ -67,39 +67,42 @@ function drawRing(ctx, w, h, progress, matched, total, holdSec) {
     ctx.stroke()
   }
 
-  ctx.font = `bold ${Math.max(28, w / 14)}px Outfit, sans-serif`
+  const timerFont = Math.max(22, w / 18)
+  ctx.font = `bold ${timerFont}px Outfit, sans-serif`
   ctx.textAlign = 'right'
   ctx.textBaseline = 'top'
-  ctx.strokeStyle = '#ffffff'
-  ctx.lineWidth = 4
-  ctx.lineJoin = 'round'
-  ctx.strokeText(`${holdSec} / ${total}`, w - 24, 24)
-  ctx.fillStyle = '#000000'
-  ctx.fillText(`${holdSec} / ${total}`, w - 24, 24)
+  const timerText = `${holdSec} / ${total}`
+  const tw = ctx.measureText(timerText).width
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)'
+  ctx.beginPath()
+  ctx.roundRect(w - 28 - tw - 10, 20, tw + 20, timerFont + 10, 8)
+  ctx.fill()
+  ctx.fillStyle = '#ffffff'
+  ctx.fillText(timerText, w - 28, 24)
   ctx.restore()
 }
 
-function drawDebug(ctx, w, h, debug, matched) {
-  if (!debug || matched) return
-  const checks = debug.checks || []
+function drawDebug(ctx, w, h, debug) {
+  const checks = (debug && debug.checks) || []
   if (checks.length === 0) return
   ctx.save()
-  const fontSize = Math.max(22, w / 26)
+  const fontSize = Math.max(14, w / 38)
   ctx.font = `bold ${fontSize}px Outfit, sans-serif`
   ctx.textBaseline = 'top'
   ctx.textAlign = 'right'
-  const lh = fontSize * 1.35
-  const timerFontSize = Math.max(28, w / 14)
-  let y = 24 + timerFontSize + 12
+  const lh = fontSize + 8
+  const timerFont = Math.max(22, w / 18)
+  let y = 24 + timerFont + 18
   for (const check of checks) {
-    let text = `${check.name} ${check.ok ? '✓' : '✗'}`
-    if (!check.ok && check.detail) text += ` ${check.detail}`
-    ctx.strokeStyle = '#ffffff'
-    ctx.lineWidth = 3
-    ctx.lineJoin = 'round'
-    ctx.strokeText(text, w - 24, y)
-    ctx.fillStyle = check.ok ? '#007700' : '#cc0000'
-    ctx.fillText(text, w - 24, y)
+    let text = `${check.ok ? '✓' : '✗'} ${check.name}`
+    if (!check.ok && check.detail) text += `  ${check.detail}`
+    const tw = ctx.measureText(text).width
+    ctx.fillStyle = check.ok ? 'rgba(0, 100, 0, 0.65)' : 'rgba(160, 0, 0, 0.65)'
+    ctx.beginPath()
+    ctx.roundRect(w - 28 - tw - 8, y - 2, tw + 16, fontSize + 6, 6)
+    ctx.fill()
+    ctx.fillStyle = '#ffffff'
+    ctx.fillText(text, w - 28, y)
     y += lh
   }
   ctx.restore()
@@ -107,15 +110,17 @@ function drawDebug(ctx, w, h, debug, matched) {
 
 function drawMessage(ctx, w, h, message, matched) {
   ctx.save()
-  ctx.font = `bold ${Math.max(24, w / 22)}px Outfit, sans-serif`
+  const fontSize = Math.max(16, w / 28)
+  ctx.font = `bold ${fontSize}px Outfit, sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'bottom'
-  ctx.strokeStyle = '#ffffff'
-  ctx.lineWidth = 4
-  ctx.lineJoin = 'round'
-  ctx.strokeText(message, w / 2, h - 20)
-  ctx.fillStyle = '#000000'
-  ctx.fillText(message, w / 2, h - 20)
+  const tw = ctx.measureText(message).width
+  ctx.fillStyle = matched ? 'rgba(0, 100, 0, 0.65)' : 'rgba(0, 0, 0, 0.55)'
+  ctx.beginPath()
+  ctx.roundRect(w / 2 - tw / 2 - 14, h - 24 - fontSize - 4, tw + 28, fontSize + 14, 8)
+  ctx.fill()
+  ctx.fillStyle = '#ffffff'
+  ctx.fillText(message, w / 2, h - 24)
   ctx.restore()
 }
 
@@ -174,14 +179,11 @@ function drawScene(ctx, video, landmarks, matched, progress, total, holdSec, mes
   }
 
   drawRing(ctx, width, height, progress, matched, total, holdSec)
-  if (debug && !matched) {
-    drawDebug(ctx, width, height, debug, matched)
-  } else {
-    drawMessage(ctx, width, height, message, matched)
-  }
+  drawDebug(ctx, width, height, debug)
+  drawMessage(ctx, width, height, message, matched)
 }
 
-function drawIntro(ctx, video, refImg, opacity) {
+function drawIntro(ctx, video, refImg, opacity, poseName, poseEn) {
   const width = video.videoWidth || ctx.canvas.width || 640
   const height = video.videoHeight || ctx.canvas.height || 480
   if (ctx.canvas.width !== width) ctx.canvas.width = width
@@ -205,6 +207,29 @@ function drawIntro(ctx, video, refImg, opacity) {
     ctx.save()
     ctx.globalAlpha = opacity
     ctx.drawImage(refImg, (width - iw) / 2, (height - ih) / 2, iw, ih)
+    ctx.restore()
+  }
+
+  if (opacity > 0.3 && poseName) {
+    ctx.save()
+    ctx.globalAlpha = Math.min(1, opacity + 0.15)
+    const titleSize = Math.max(28, width / 14)
+    const subSize = Math.max(16, width / 28)
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
+    ctx.beginPath()
+    ctx.roundRect(width * 0.08, height * 0.78, width * 0.84, titleSize + subSize + 30, 12)
+    ctx.fill()
+
+    ctx.font = `bold ${titleSize}px Outfit, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+    ctx.fillStyle = '#ffffff'
+    ctx.fillText(poseName, width / 2, height * 0.78 + 10)
+
+    ctx.font = `${subSize}px Outfit, sans-serif`
+    ctx.fillStyle = '#dddddd'
+    ctx.fillText(`Let's practice ${poseEn}`, width / 2, height * 0.78 + 14 + titleSize)
     ctx.restore()
   }
 }
@@ -277,10 +302,13 @@ function playDing(audioCtx) {
   })
 }
 
-function getVoices() {
-  return new Promise((resolve) => {
-    const voices = speechSynthesis.getVoices()
-    if (voices.length > 0) { resolve(voices); return }
+let voicesReady = null
+function ensureVoices() {
+  if (voicesReady) return voicesReady
+  voicesReady = new Promise((resolve) => {
+    if (!window.speechSynthesis) { resolve([]); return }
+    const v = speechSynthesis.getVoices()
+    if (v.length > 0) { resolve(v); return }
     let done = false
     function handler() {
       if (done) return
@@ -289,19 +317,27 @@ function getVoices() {
       resolve(speechSynthesis.getVoices())
     }
     speechSynthesis.addEventListener('voiceschanged', handler)
-    setTimeout(handler, 2000)
+    setTimeout(handler, 3000)
   })
+  return voicesReady
+}
+
+export function unlockSpeech() {
+  if (!window.speechSynthesis) return
+  ensureVoices()
+  const u = new SpeechSynthesisUtterance('')
+  u.volume = 0
+  try { speechSynthesis.speak(u) } catch { /* ok */ }
 }
 
 async function speak(text) {
   if (!window.speechSynthesis) return
-  speechSynthesis.cancel()
-  const voices = await getVoices()
+  const voices = await ensureVoices()
   return new Promise((resolve) => {
     const utt = new SpeechSynthesisUtterance(text)
     utt.lang = 'en-IN'
     utt.pitch = 1.1
-    utt.rate = 0.9
+    utt.rate = 0.88
     utt.volume = 1.0
     const female = voices.find((v) => /female|samantha|zira|google.*uk.*female|veena|rishi/i.test(v.name) && v.lang.startsWith('en'))
       || voices.find((v) => v.lang.startsWith('en'))
@@ -367,7 +403,7 @@ export default function Session({ pose, step = 0, position, onComplete, tanpuraP
 
     function drawIntroFrame() {
       if (stopped) return
-      drawIntro(ctx, video, refImg, introOpacity)
+      drawIntro(ctx, video, refImg, introOpacity, poseRef.current.name, poseRef.current.en)
       if (introFading) {
         introOpacity = Math.max(0, introOpacity - 0.03)
         if (introOpacity <= 0) return

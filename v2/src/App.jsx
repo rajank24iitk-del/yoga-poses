@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import Session from './Session'
+import Session, { unlockSpeech } from './Session'
 import { createTanpura } from './tanpura'
 import { ASANAS, MODES, alphabetical, asanaById, sequenceFor } from './asanas'
 
@@ -201,6 +201,7 @@ export default function App() {
 
   useEffect(() => {
     function autoStart() {
+      unlockSpeech()
       if (tanpura.current.playing) return
       tanpura.current.start().then(() => {
         setPlaying(true)
@@ -233,6 +234,7 @@ export default function App() {
   }
 
   function begin() {
+    unlockSpeech()
     setHeld(false)
     setScreen('asanas')
     if (!tanpura.current.playing) {
@@ -246,6 +248,7 @@ export default function App() {
   }
 
   function openAsana(id) {
+    unlockSpeech()
     setHeld(false)
     setQueue(null)
     setStep(0)
@@ -254,6 +257,7 @@ export default function App() {
   }
 
   function startSequence() {
+    unlockSpeech()
     const order = sequenceFor(mode)
     if (!order) return
     setHeld(false)
