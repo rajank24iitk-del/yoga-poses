@@ -57,20 +57,20 @@ h1 {
   position: absolute;
   inset: 0;
   background-size: cover;
-  background-position: center center;
+  background-position: 92% 30%;
   transition: opacity 0.65s ease;
 }
 
 .backdrop-gold {
   background-image:
-    linear-gradient(180deg, rgba(24, 12, 2, 0.36) 0%, var(--tint) 48%, rgba(18, 9, 2, 0.64) 100%),
+    linear-gradient(180deg, rgba(24, 12, 2, 0.08) 0%, rgba(24, 12, 2, 0.0) 38%, rgba(18, 9, 2, 0.22) 100%),
     var(--studio-gold-bg);
   opacity: 1;
 }
 
 .backdrop-green {
   background-image:
-    linear-gradient(180deg, rgba(5, 28, 16, 0.34) 0%, rgba(10, 56, 32, 0.28) 48%, rgba(4, 24, 14, 0.64) 100%),
+    linear-gradient(180deg, rgba(5, 28, 16, 0.08) 0%, rgba(5, 28, 16, 0.0) 38%, rgba(4, 24, 14, 0.22) 100%),
     var(--studio-green-bg);
   opacity: 0;
 }
@@ -88,32 +88,8 @@ h1 {
   inset: 0;
   background: radial-gradient(circle at 52% 38%, var(--glow) 0%, transparent 62%);
   mix-blend-mode: screen;
-  opacity: 0.8;
+  opacity: 0.28;
   transition: background 0.5s ease;
-}
-
-.fluted-pane {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: clamp(36px, 11vw, 130px);
-  backdrop-filter: blur(8px) saturate(140%);
-  -webkit-backdrop-filter: blur(8px) saturate(140%);
-  background-image: var(--flute);
-  box-shadow:
-    inset 0 0 26px var(--glow),
-    0 0 32px rgba(0, 0, 0, 0.38);
-  transition: border-color 0.5s ease, box-shadow 0.5s ease;
-}
-
-.fluted-left {
-  left: 0;
-  border-right: 1px solid var(--border);
-}
-
-.fluted-right {
-  right: 0;
-  border-left: 1px solid var(--border);
 }
 
 .home, .practice {
@@ -127,7 +103,7 @@ h1 {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 28px 0 38px;
 }
 
@@ -273,8 +249,8 @@ h1 {
   flex-direction: column;
   gap: 16px;
   width: min(440px, 100%);
-  margin: auto 0;
-  padding: 24px 0;
+  margin: min(42vh, 360px) auto 0;
+  padding: 0;
 }
 
 .glass-tile {
@@ -357,6 +333,7 @@ h1 {
   align-items: center;
   text-align: center;
   gap: 14px;
+  margin-top: 28px;
 }
 
 .begin-amber {

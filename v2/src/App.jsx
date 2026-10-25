@@ -247,8 +247,6 @@ export default function App() {
       <div className="studio-backdrop" aria-hidden="true">
         <div className="backdrop-layer backdrop-gold" />
         <div className="backdrop-layer backdrop-green" />
-        <div className="fluted-pane fluted-left" />
-        <div className="fluted-pane fluted-right" />
         <div className="sun-wash" />
       </div>
 
@@ -265,14 +263,13 @@ export default function App() {
             </button>
 
             <div className="brand-lockup">
-              <p className="edition">Version two</p>
               <h1 className="brand-title">YOGA</h1>
               <div className="brand-rule" aria-hidden="true">
                 <span className="rule-line" />
                 <span className="rule-diamond" />
                 <span className="rule-line" />
               </div>
-              <p className="brand-subtitle">Modern Asana Studio • योग</p>
+              <p className="brand-subtitle">Asana Studio • योग</p>
             </div>
 
             <button

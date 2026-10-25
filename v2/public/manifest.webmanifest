@@ -1,7 +1,7 @@
 {
-  "name": "YOGA • Modern Asana Studio",
+  "name": "YOGA • Asana Studio",
   "short_name": "YOGA",
-  "description": "Modern Asana Studio with live pose landmarks, mindful hold timer, and C# tanpura.",
+  "description": "Asana Studio with live pose landmarks, mindful hold timer, and C# tanpura.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
