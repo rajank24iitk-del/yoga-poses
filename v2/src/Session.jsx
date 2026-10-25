@@ -16,7 +16,7 @@ const BONES = [
 
 function drawRing(ctx, w, h, progress, matched, total, holdSec) {
   const pad = 8
-  const thick = 6
+  const thick = 12
   const r = thick / 2 + 1
   const x0 = pad, y0 = pad, x1 = w - pad, y1 = h - pad
   const rw = x1 - x0, rh = y1 - y0
@@ -44,8 +44,8 @@ function drawRing(ctx, w, h, progress, matched, total, holdSec) {
   }
 
   const ticks = Math.max(1, total)
-  const tickLen = 8
-  ctx.lineWidth = 1.5
+  const tickLen = 12
+  ctx.lineWidth = 3
   ctx.strokeStyle = matched ? 'rgba(94, 242, 158, 0.5)' : 'rgba(255, 212, 112, 0.5)'
   ctx.shadowBlur = 0
   for (let i = 1; i < ticks; i++) {
@@ -67,22 +67,23 @@ function drawRing(ctx, w, h, progress, matched, total, holdSec) {
     ctx.stroke()
   }
 
-  ctx.font = `bold ${Math.max(16, w / 28)}px Outfit, sans-serif`
+  ctx.font = `bold ${Math.max(28, w / 14)}px Outfit, sans-serif`
   ctx.textAlign = 'right'
   ctx.textBaseline = 'top'
   ctx.fillStyle = matched ? '#5ef29e' : '#ffd470'
   ctx.shadowColor = 'rgba(0,0,0,0.7)'
   ctx.shadowBlur = 6
-  ctx.fillText(`${holdSec} / ${total}`, w - 20, 20)
+  ctx.fillText(`${holdSec} / ${total}`, w - 24, 24)
   ctx.restore()
 }
 
 function drawDebug(ctx, w, h, debug, matched) {
   if (!debug || matched) return
   ctx.save()
-  ctx.font = `${Math.max(12, w / 52)}px Outfit, sans-serif`
-  ctx.textBaseline = 'bottom'
-  ctx.textAlign = 'left'
+  const fontSize = Math.max(22, w / 26)
+  ctx.font = `${fontSize}px Outfit, sans-serif`
+  ctx.textBaseline = 'top'
+  ctx.textAlign = 'right'
   ctx.shadowColor = 'rgba(0,0,0,0.8)'
   ctx.shadowBlur = 4
   const lines = []
@@ -102,26 +103,27 @@ function drawDebug(ctx, w, h, debug, matched) {
     if (!debug.elbowsStraight) armLine += ` ${debug.leftElbow}°/${debug.rightElbow}°`
   }
   lines.push(armLine)
-  const lh = Math.max(16, w / 40)
-  let y = h - 14
-  for (let i = lines.length - 1; i >= 0; i--) {
+  const lh = fontSize * 1.35
+  const timerFontSize = Math.max(28, w / 14)
+  let y = 24 + timerFontSize + 12
+  for (let i = 0; i < lines.length; i++) {
     const ok = lines[i].includes('✓')
     ctx.fillStyle = ok ? '#7ef5b2' : '#ff9a6a'
-    ctx.fillText(lines[i], 18, y)
-    y -= lh
+    ctx.fillText(lines[i], w - 24, y)
+    y += lh
   }
   ctx.restore()
 }
 
 function drawMessage(ctx, w, h, message, matched) {
   ctx.save()
-  ctx.font = `${Math.max(13, w / 44)}px Outfit, sans-serif`
+  ctx.font = `${Math.max(24, w / 22)}px Outfit, sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'bottom'
   ctx.fillStyle = matched ? '#c4f5d4' : '#f5d293'
   ctx.shadowColor = 'rgba(0,0,0,0.8)'
   ctx.shadowBlur = 6
-  ctx.fillText(message, w / 2, h - 14)
+  ctx.fillText(message, w / 2, h - 20)
   ctx.restore()
 }
 
@@ -205,7 +207,7 @@ function drawIntro(ctx, video, refImg, opacity) {
   }
 
   if (refImg && refImg.complete && refImg.naturalWidth > 0) {
-    const scale = Math.min(width * 0.55 / refImg.naturalWidth, height * 0.85 / refImg.naturalHeight)
+    const scale = Math.max(width / refImg.naturalWidth, height / refImg.naturalHeight)
     const iw = refImg.naturalWidth * scale
     const ih = refImg.naturalHeight * scale
     ctx.save()
@@ -262,16 +264,25 @@ function modelMessage(error) {
 }
 
 function playDing(audioCtx) {
-  const osc = audioCtx.createOscillator()
-  const gain = audioCtx.createGain()
-  osc.type = 'sine'
-  osc.frequency.value = 880
-  gain.gain.setValueAtTime(0.35, audioCtx.currentTime)
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12)
-  osc.connect(gain)
-  gain.connect(audioCtx.destination)
-  osc.start(audioCtx.currentTime)
-  osc.stop(audioCtx.currentTime + 0.15)
+  const now = audioCtx.currentTime
+  const partials = [
+    { freq: 880, gain: 1.0, decay: 0.8 },
+    { freq: 1760, gain: 0.6, decay: 0.5 },
+    { freq: 2640, gain: 0.25, decay: 0.35 },
+    { freq: 4400, gain: 0.12, decay: 0.2 },
+  ]
+  partials.forEach(({ freq, gain: vol, decay }) => {
+    const osc = audioCtx.createOscillator()
+    const g = audioCtx.createGain()
+    osc.type = 'sine'
+    osc.frequency.value = freq
+    g.gain.setValueAtTime(vol * 0.9, now)
+    g.gain.exponentialRampToValueAtTime(0.001, now + decay)
+    osc.connect(g)
+    g.connect(audioCtx.destination)
+    osc.start(now)
+    osc.stop(now + decay + 0.05)
+  })
 }
 
 function speak(text) {

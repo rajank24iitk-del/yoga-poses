@@ -199,6 +199,22 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ seconds, tanpura: tanpuraOn, ding: dingOn, theme }))
   }, [seconds, tanpuraOn, dingOn, theme])
 
+  useEffect(() => {
+    function autoStart() {
+      if (tanpura.current.playing) return
+      tanpura.current.start().then(() => {
+        setPlaying(true)
+        setTanpuraOn(true)
+      }).catch(() => {})
+    }
+    window.addEventListener('click', autoStart, { once: true })
+    window.addEventListener('touchstart', autoStart, { once: true })
+    return () => {
+      window.removeEventListener('click', autoStart)
+      window.removeEventListener('touchstart', autoStart)
+    }
+  }, [])
+
   async function setTanpura(next) {
     setTanpuraOn(next)
     if (next) {
