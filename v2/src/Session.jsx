@@ -236,6 +236,7 @@ export default function Session({ pose, step = 0, position, onComplete, music, o
             matched: next.matched,
             visible: scored.visible,
             done: next.done,
+            debug: scored.debug || null,
           })
         } finally {
           busy = false
@@ -336,6 +337,33 @@ export default function Session({ pose, step = 0, position, onComplete, music, o
           <div className="fill" style={{ width: `${progress}%` }} />
         </div>
         <p>{message}</p>
+        {view.debug && !view.matched && view.visible && (
+          <ul className="debug-checks">
+            <li className={view.debug.upright ? 'ok' : ''}>Torso upright {view.debug.upright ? '✓' : '✗'}</li>
+            <li className={view.debug.legs ? 'ok' : ''}>
+              Leg fold {view.debug.legs ? '✓' : '✗'}
+              {!view.debug.legs && (
+                <small>
+                  {!view.debug.legStraight && ' standing leg bent'}
+                  {!view.debug.legBent && ` bent ${view.debug.bentAngle}°`}
+                  {!view.debug.footOnThigh && ' foot not on thigh'}
+                  {!view.debug.footLifted && ' foot not lifted'}
+                  {!view.debug.kneeOut && ' knee not out'}
+                </small>
+              )}
+            </li>
+            <li className={view.debug.arms ? 'ok' : ''}>
+              Arms {view.debug.arms ? '✓' : '✗'}
+              {!view.debug.arms && (
+                <small>
+                  {!view.debug.armsUp && ' hands below nose'}
+                  {!view.debug.handsClose && ' hands apart'}
+                  {!view.debug.elbowsStraight && ` elbows ${view.debug.leftElbow}°/${view.debug.rightElbow}°`}
+                </small>
+              )}
+            </li>
+          </ul>
+        )}
       </section>
     </main>
   )

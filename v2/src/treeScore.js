@@ -38,7 +38,7 @@ function point(landmarks, index) {
 function seen(spot) {
   if (!spot) return false
   const score = spot.visibility ?? spot.score ?? 0
-  return score >= 0.5 && Number.isFinite(spot.x) && Number.isFinite(spot.y)
+  return score >= 0.4 && Number.isFinite(spot.x) && Number.isFinite(spot.y)
 }
 
 function dist(a, b) {
@@ -61,14 +61,14 @@ function angle(a, b, c) {
 }
 
 function standingFold(standingHip, standingKnee, standingAnkle, raisedHip, raisedKnee, raisedAnkle, hips, torso) {
-  const straight = angle(standingHip, standingKnee, standingAnkle) > 155
+  const straight = angle(standingHip, standingKnee, standingAnkle) > 140
   const bent = angle(raisedHip, raisedKnee, raisedAnkle)
-  const bentOk = bent > 35 && bent < 130
-  const onThigh = dist(raisedAnkle, standingKnee) < torso * 0.7
+  const bentOk = bent > 25 && bent < 150
+  const onThigh = dist(raisedAnkle, standingKnee) < torso * 1.1
     && dist(raisedAnkle, standingKnee) < dist(raisedAnkle, standingAnkle)
-  const lifted = raisedAnkle.y < standingAnkle.y - torso * 0.12
-  const kneeOut = Math.abs(raisedKnee.x - hips.x) > Math.abs(standingKnee.x - hips.x) + torso * 0.04
-  return straight && bentOk && onThigh && lifted && kneeOut
+  const lifted = raisedAnkle.y < standingAnkle.y - torso * 0.06
+  const kneeOut = Math.abs(raisedKnee.x - hips.x) > Math.abs(standingKnee.x - hips.x) * 0.6
+  return { pass: straight && bentOk && onThigh && lifted && kneeOut, straight, bentOk, onThigh, lifted, kneeOut, bentAngle: bent }
 }
 
 export function scoreTree(landmarks) {
@@ -77,16 +77,16 @@ export function scoreTree(landmarks) {
   }
   const spots = NEEDED.map((index) => point(landmarks, index))
   if (!spots.every(seen)) {
-    return { matched: false, score: 0, visible: false }
+    return { matched: false, score: 0, visible: false, reason: 'body not visible' }
   }
 
   const shoulders = mid(point(landmarks, LEFT_SHOULDER), point(landmarks, RIGHT_SHOULDER))
   const hips = mid(point(landmarks, LEFT_HIP), point(landmarks, RIGHT_HIP))
   const torso = Math.max(0.05, dist(shoulders, hips))
-  const upright = shoulders.y < hips.y - torso * 0.2
-    && Math.abs(shoulders.x - hips.x) < torso * 0.65
+  const upright = shoulders.y < hips.y - torso * 0.15
+    && Math.abs(shoulders.x - hips.x) < torso * 0.75
 
-  const leftStands = standingFold(
+  const leftResult = standingFold(
     point(landmarks, LEFT_HIP),
     point(landmarks, LEFT_KNEE),
     point(landmarks, LEFT_ANKLE),
@@ -96,7 +96,7 @@ export function scoreTree(landmarks) {
     hips,
     torso,
   )
-  const rightStands = standingFold(
+  const rightResult = standingFold(
     point(landmarks, RIGHT_HIP),
     point(landmarks, RIGHT_KNEE),
     point(landmarks, RIGHT_ANKLE),
@@ -111,24 +111,38 @@ export function scoreTree(landmarks) {
   const leftWrist = point(landmarks, LEFT_WRIST)
   const rightWrist = point(landmarks, RIGHT_WRIST)
   const armsUp = leftWrist.y < nose.y && rightWrist.y < nose.y
-  const handsClose = dist(leftWrist, rightWrist) < torso * 0.75
-  const elbowsStraight = angle(
-    point(landmarks, LEFT_SHOULDER),
-    point(landmarks, LEFT_ELBOW),
-    leftWrist,
-  ) > 140 && angle(
-    point(landmarks, RIGHT_SHOULDER),
-    point(landmarks, RIGHT_ELBOW),
-    rightWrist,
-  ) > 140
+  const handsClose = dist(leftWrist, rightWrist) < torso * 1.0
+  const leftElbowAngle = angle(point(landmarks, LEFT_SHOULDER), point(landmarks, LEFT_ELBOW), leftWrist)
+  const rightElbowAngle = angle(point(landmarks, RIGHT_SHOULDER), point(landmarks, RIGHT_ELBOW), rightWrist)
+  const elbowsStraight = leftElbowAngle > 120 && rightElbowAngle > 120
   const arms = armsUp && handsClose && elbowsStraight
-  const legs = leftStands || rightStands
+  const legs = leftResult.pass || rightResult.pass
   const checks = [upright, legs, arms]
   const score = checks.filter(Boolean).length / checks.length
+
+  const legDetail = leftResult.pass ? leftResult : rightResult.pass ? rightResult : leftResult
+  const debug = {
+    upright,
+    legs,
+    arms,
+    armsUp,
+    handsClose,
+    elbowsStraight,
+    leftElbow: Math.round(leftElbowAngle),
+    rightElbow: Math.round(rightElbowAngle),
+    legStraight: legDetail.straight,
+    legBent: legDetail.bentOk,
+    footOnThigh: legDetail.onThigh,
+    footLifted: legDetail.lifted,
+    kneeOut: legDetail.kneeOut,
+    bentAngle: Math.round(legDetail.bentAngle),
+  }
+
   return {
     matched: checks.every(Boolean),
     score,
     visible: true,
+    debug,
   }
 }
 

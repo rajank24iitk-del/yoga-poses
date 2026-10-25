@@ -217,11 +217,12 @@ export default function App() {
   function begin() {
     setHeld(false)
     setScreen('asanas')
-    if (tanpuraOn && !tanpura.current.playing) {
-      tanpura.current.start().then(() => setPlaying(true)).catch((error) => {
+    if (!tanpura.current.playing) {
+      tanpura.current.start().then(() => {
+        setPlaying(true)
+        setTanpuraOn(true)
+      }).catch((error) => {
         console.error(error)
-        setTanpuraOn(false)
-        setPlaying(false)
       })
     }
   }

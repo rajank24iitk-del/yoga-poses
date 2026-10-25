@@ -163,6 +163,29 @@ h1 {
   margin: 28px auto 12px;
 }
 
+.debug-checks {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 0.82rem;
+}
+
+.debug-checks li {
+  color: #ff9a6a;
+}
+
+.debug-checks li.ok {
+  color: #7ef5b2;
+}
+
+.debug-checks small {
+  display: inline;
+  opacity: 0.75;
+}
+
 .status .retry {
   margin-top: 10px;
 }
