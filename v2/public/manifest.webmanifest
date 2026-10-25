@@ -1,12 +1,12 @@
 {
-  "name": "Vrikshasanam",
-  "short_name": "Vrikshasanam",
-  "description": "The tree pose, with a camera and a hold timer.",
+  "name": "YOGA • Modern Asana Studio",
+  "short_name": "YOGA",
+  "description": "Modern Asana Studio with live pose landmarks, mindful hold timer, and C# tanpura.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#ef8a32",
-  "theme_color": "#ef8a32",
+  "background_color": "#2b1608",
+  "theme_color": "#2b1608",
   "icons": [
     {
       "src": "icon-192.png",

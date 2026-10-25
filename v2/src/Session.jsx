@@ -13,7 +13,7 @@ const BONES = [
   [27, 29], [27, 31], [28, 30], [28, 32], [29, 31], [30, 32],
 ]
 
-function drawScene(ctx, video, landmarks, matched, dotColor) {
+function drawScene(ctx, video, landmarks, matched) {
   const width = video.videoWidth
   const height = video.videoHeight
   if (!width || !height) return
@@ -27,13 +27,28 @@ function drawScene(ctx, video, landmarks, matched, dotColor) {
   ctx.restore()
 
   if (!landmarks) return
-  const color = matched ? '#1f7a45' : dotColor
+
+  const grad = ctx.createLinearGradient(0, 0, 0, height)
+  if (matched) {
+    grad.addColorStop(0, '#e8fff2')
+    grad.addColorStop(0.45, '#5ef29e')
+    grad.addColorStop(1, '#1fa85c')
+  } else {
+    grad.addColorStop(0, '#fff9e6')
+    grad.addColorStop(0.45, '#ffd470')
+    grad.addColorStop(1, '#c97e1a')
+  }
+
   const xOf = (spot) => width - spot.x * width
   const yOf = (spot) => spot.y * height
-  ctx.lineWidth = Math.max(3, width / 180)
+  ctx.save()
+  ctx.lineWidth = Math.max(3.5, width / 170)
   ctx.lineCap = 'round'
-  ctx.strokeStyle = color
-  ctx.fillStyle = color
+  ctx.strokeStyle = grad
+  ctx.fillStyle = grad
+  ctx.shadowColor = matched ? 'rgba(72, 240, 146, 0.85)' : 'rgba(255, 196, 76, 0.85)'
+  ctx.shadowBlur = 12
+
   BONES.forEach(([start, end]) => {
     const a = landmarks[start]
     const b = landmarks[end]
@@ -43,12 +58,14 @@ function drawScene(ctx, video, landmarks, matched, dotColor) {
     ctx.lineTo(xOf(b), yOf(b))
     ctx.stroke()
   })
+
   landmarks.forEach((spot, index) => {
     if (!spot || index < 11 || (spot.visibility ?? 0) < 0.4) return
     ctx.beginPath()
-    ctx.arc(xOf(spot), yOf(spot), Math.max(4, width / 150), 0, Math.PI * 2)
+    ctx.arc(xOf(spot), yOf(spot), Math.max(4.5, width / 140), 0, Math.PI * 2)
     ctx.fill()
   })
+  ctx.restore()
 }
 
 export default function Session({ music, onToggleMusic, onExit, onOpenSettings, holdMs, dotColor, onHeldChange }) {
@@ -161,20 +178,20 @@ export default function Session({ music, onToggleMusic, onExit, onOpenSettings, 
   const seconds = (view.holdMs / 1000).toFixed(1)
   const progress = Math.min(100, (view.holdMs / holdMs) * 100)
   const message = view.done
-    ? 'Held.'
+    ? 'Held in metallic emerald.'
     : view.matched
-      ? 'Stay. The count is running.'
+      ? 'Stay steady. The metallic emerald count is running.'
       : view.visible
-        ? 'Match the picture. The count waits.'
+        ? 'Match the picture. The studio turns metallic green when aligned.'
         : 'Bring your whole body into the camera.'
 
   return (
     <main className="practice">
       <header className="practice-top">
         <button className="text-button" type="button" onClick={onExit}>Back</button>
-        <div>
+        <div className="practice-heading">
           <p className="sanskrit small">वृक्षासन</p>
-          <h1>Vrikshasanam</h1>
+          <h1 className="metallic-heading">Vrikshasanam</h1>
           <p className="subtitle">the tree pose</p>
         </div>
         <div className="header-actions">
@@ -213,7 +230,7 @@ export default function Session({ music, onToggleMusic, onExit, onOpenSettings, 
       >
         <div className="meter-row">
           <span>{view.done ? 'Complete' : 'Hold'}</span>
-          <strong>{seconds} / {total}</strong>
+          <strong className="metallic-heading">{seconds} / {total}</strong>
         </div>
         <div className="track">
           <div className="fill" style={{ width: `${progress}%` }} />
