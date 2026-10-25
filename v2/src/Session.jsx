@@ -322,29 +322,46 @@ function ensureVoices() {
   return voicesReady
 }
 
+let speechUnlocked = false
 export function unlockSpeech() {
-  if (!window.speechSynthesis) return
+  if (!window.speechSynthesis || speechUnlocked) return
+  speechUnlocked = true
   ensureVoices()
-  const u = new SpeechSynthesisUtterance('')
-  u.volume = 0
+  speechSynthesis.cancel()
+  const u = new SpeechSynthesisUtterance('.')
+  u.volume = 0.01
+  u.rate = 10
   try { speechSynthesis.speak(u) } catch { /* ok */ }
+}
+
+function pickVoice(voices) {
+  return voices.find((v) => /female|samantha|zira|google.*uk.*female|veena|rishi/i.test(v.name) && v.lang.startsWith('en'))
+    || voices.find((v) => /google/i.test(v.name) && v.lang.startsWith('en'))
+    || voices.find((v) => v.lang.startsWith('en'))
 }
 
 async function speak(text) {
   if (!window.speechSynthesis) return
   const voices = await ensureVoices()
+  speechSynthesis.cancel()
+  await new Promise((r) => setTimeout(r, 120))
   return new Promise((resolve) => {
     const utt = new SpeechSynthesisUtterance(text)
     utt.lang = 'en-IN'
     utt.pitch = 1.1
     utt.rate = 0.88
     utt.volume = 1.0
-    const female = voices.find((v) => /female|samantha|zira|google.*uk.*female|veena|rishi/i.test(v.name) && v.lang.startsWith('en'))
-      || voices.find((v) => v.lang.startsWith('en'))
-    if (female) utt.voice = female
-    utt.onend = resolve
-    utt.onerror = resolve
-    setTimeout(resolve, 8000)
+    const voice = pickVoice(voices)
+    if (voice) utt.voice = voice
+    let resolved = false
+    function done() {
+      if (resolved) return
+      resolved = true
+      resolve()
+    }
+    utt.onend = done
+    utt.onerror = done
+    setTimeout(done, 8000)
     speechSynthesis.speak(utt)
   })
 }
