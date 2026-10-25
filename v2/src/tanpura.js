@@ -177,6 +177,20 @@ export function createTanpura() {
       pump()
       timer = setInterval(pump, 500)
     },
+    dip(volume, seconds) {
+      if (!ctx || !master) return
+      const now = ctx.currentTime
+      master.gain.cancelScheduledValues(now)
+      master.gain.setValueAtTime(master.gain.value, now)
+      master.gain.linearRampToValueAtTime(volume, now + seconds)
+    },
+    restore(seconds) {
+      if (!ctx || !master) return
+      const now = ctx.currentTime
+      master.gain.cancelScheduledValues(now)
+      master.gain.setValueAtTime(master.gain.value, now)
+      master.gain.linearRampToValueAtTime(VOLUME, now + seconds)
+    },
     async stop() {
       token += 1
       on = false

@@ -88,10 +88,11 @@ function loadSettings() {
     return {
       seconds: snapSeconds(saved.seconds ?? 10),
       tanpura: saved.tanpura !== false,
+      ding: saved.ding !== false,
       theme: THEMES[saved.theme] ? saved.theme : 'gold',
     }
   } catch {
-    return { seconds: 10, tanpura: true, theme: 'gold' }
+    return { seconds: 10, tanpura: true, ding: true, theme: 'gold' }
   }
 }
 
@@ -188,14 +189,15 @@ export default function App() {
   const [step, setStep] = useState(0)
   const [seconds, setSeconds] = useState(initial.current.seconds)
   const [tanpuraOn, setTanpuraOn] = useState(initial.current.tanpura)
+  const [dingOn, setDingOn] = useState(initial.current.ding)
   const [theme, setTheme] = useState(initial.current.theme)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [held, setHeld] = useState(false)
   const [playing, setPlaying] = useState(false)
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ seconds, tanpura: tanpuraOn, theme }))
-  }, [seconds, tanpuraOn, theme])
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ seconds, tanpura: tanpuraOn, ding: dingOn, theme }))
+  }, [seconds, tanpuraOn, dingOn, theme])
 
   async function setTanpura(next) {
     setTanpuraOn(next)
@@ -432,6 +434,8 @@ export default function App() {
           step={step}
           position={queue ? { index: step + 1, total: queue.length } : null}
           onComplete={queue ? nextInSequence : null}
+          tanpuraPlayer={tanpura.current}
+          dingOn={dingOn}
           music={playing}
           onToggleMusic={() => setTanpura(!playing)}
           onExit={() => {
@@ -475,6 +479,18 @@ export default function App() {
                 onClick={() => setTanpura(!tanpuraOn)}
               >
                 {tanpuraOn ? 'On' : 'Off'}
+              </button>
+            </div>
+            <div className="setting">
+              <p>Ding each second</p>
+              <button
+                className="switch"
+                type="button"
+                role="switch"
+                aria-checked={dingOn}
+                onClick={() => setDingOn(!dingOn)}
+              >
+                {dingOn ? 'On' : 'Off'}
               </button>
             </div>
             <p className="credit">
