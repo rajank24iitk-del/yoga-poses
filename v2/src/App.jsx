@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Session from './Session'
 import { createTanpura } from './tanpura'
+import { ASANAS, MODES, alphabetical, asanaById, sequenceFor } from './asanas'
 
 const STORAGE_KEY = 'vrikshasanam-settings'
 
@@ -181,6 +182,10 @@ export default function App() {
   const initial = useRef(null)
   if (!initial.current) initial.current = loadSettings()
   const [screen, setScreen] = useState('home')
+  const [poseId, setPoseId] = useState(ASANAS[0].id)
+  const [mode, setMode] = useState('single')
+  const [queue, setQueue] = useState(null)
+  const [step, setStep] = useState(0)
   const [seconds, setSeconds] = useState(initial.current.seconds)
   const [tanpuraOn, setTanpuraOn] = useState(initial.current.tanpura)
   const [theme, setTheme] = useState(initial.current.theme)
@@ -211,7 +216,7 @@ export default function App() {
 
   function begin() {
     setHeld(false)
-    setScreen('practice')
+    setScreen('asanas')
     if (tanpuraOn && !tanpura.current.playing) {
       tanpura.current.start().then(() => setPlaying(true)).catch((error) => {
         console.error(error)
@@ -221,6 +226,38 @@ export default function App() {
     }
   }
 
+  function openAsana(id) {
+    setHeld(false)
+    setQueue(null)
+    setStep(0)
+    setPoseId(id)
+    setScreen('practice')
+  }
+
+  function startSequence() {
+    const order = sequenceFor(mode)
+    if (!order) return
+    setHeld(false)
+    setQueue(order)
+    setStep(0)
+    setPoseId(order[0])
+    setScreen('practice')
+  }
+
+  function nextInSequence() {
+    if (!queue) return
+    if (step + 1 >= queue.length) {
+      setHeld(false)
+      setQueue(null)
+      setStep(0)
+      setScreen('asanas')
+      return
+    }
+    setStep(step + 1)
+    setPoseId(queue[step + 1])
+  }
+
+  const pose = asanaById(poseId)
   const baseTheme = THEMES[theme] || THEMES.gold
   const isGreen = (held && screen === 'practice') || theme === 'emerald'
   const palette = held && screen === 'practice' ? { ...baseTheme, ...HELD } : baseTheme
@@ -290,7 +327,7 @@ export default function App() {
               </span>
               <span className="tile-copy">
                 <strong>Guided Pose Sequence</strong>
-                <small>Flow with intention</small>
+                <small>Seven asanas • सात आसन</small>
               </span>
               <span className="tile-arrow">
                 <ChevronRight />
@@ -318,17 +355,87 @@ export default function App() {
               <span>BEGIN</span>
             </button>
             <p className="note">
-              Stand where the camera sees your whole body. The dots and studio shift from metallic gold to metallic emerald when the pose is right.
+              Choose an asana. The dots and studio shift from metallic gold to metallic emerald when the pose is right.
             </p>
           </footer>
         </main>
+      ) : screen === 'asanas' ? (
+        <main className="home asana-home">
+          <header className="home-top">
+            <button className="text-button" type="button" onClick={() => setScreen('home')}>Back</button>
+            <div className="brand-lockup">
+              <p className="sanskrit small">आसन</p>
+              <h1 className="metallic-heading asana-title">Choose an asana</h1>
+            </div>
+            <button
+              className={`glass-orb-btn${playing ? ' active' : ''}`}
+              type="button"
+              aria-label={playing ? 'Tanpura playing' : 'Play tanpura'}
+              onClick={() => setTanpura(!playing)}
+            >
+              <SoundIcon active={playing} />
+            </button>
+          </header>
+          <div className="mode-picker">
+            <label htmlFor="mode-select">Practice</label>
+            <select id="mode-select" value={mode} onChange={(event) => setMode(event.target.value)}>
+              {MODES.map((item) => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+          </div>
+          {sequenceFor(mode) ? (
+            <section className="asana-list" aria-label="Sequence">
+              <ol className="sequence-steps">
+                {sequenceFor(mode).map((id, index) => {
+                  const item = asanaById(id)
+                  return (
+                    <li key={`${id}-${index}`}>
+                      <span className="step-no">{index + 1}</span>
+                      <img src={`${import.meta.env.BASE_URL}${item.image}`} alt="" />
+                      <span className="tile-copy">
+                        <strong>{item.hi}</strong>
+                        <small>{item.name}</small>
+                      </span>
+                    </li>
+                  )
+                })}
+              </ol>
+              <p className="note sequence-note">
+                Each asana moves on after the hold turns green for {seconds} seconds. Change the hold time in Settings.
+              </p>
+              <button className="begin-amber sequence-start" type="button" onClick={startSequence}>
+                <span>START</span>
+              </button>
+            </section>
+          ) : (
+            <section className="asana-list" aria-label="Asanas">
+              {(mode === 'alphabetical' ? alphabetical() : ASANAS.slice(0, 7)).map((item) => (
+                <button key={item.id} className="glass-tile asana-tile" type="button" onClick={() => openAsana(item.id)}>
+                  <img src={`${import.meta.env.BASE_URL}${item.image}`} alt="" />
+                  <span className="tile-copy">
+                    <strong>{item.hi}</strong>
+                    <small>{item.name} • {item.en}</small>
+                  </span>
+                  <span className="tile-arrow">
+                    <ChevronRight />
+                  </span>
+                </button>
+              ))}
+            </section>
+          )}
+        </main>
       ) : (
         <Session
+          pose={pose}
+          step={step}
+          position={queue ? { index: step + 1, total: queue.length } : null}
+          onComplete={queue ? nextInSequence : null}
           music={playing}
           onToggleMusic={() => setTanpura(!playing)}
           onExit={() => {
             setHeld(false)
-            setScreen('home')
+            setScreen('asanas')
           }}
           onOpenSettings={() => setSettingsOpen(true)}
           holdMs={seconds * 1000}
@@ -350,7 +457,7 @@ export default function App() {
               <button className="text-button" type="button" onClick={() => setSettingsOpen(false)}>Close</button>
             </div>
             <div className="setting">
-              <p>Hold</p>
+              <p>Hold timer</p>
               <div className="stepper">
                 <button type="button" onClick={() => setSeconds((value) => snapSeconds(value - 5))} disabled={seconds <= 5} aria-label="Shorter hold">−</button>
                 <strong>{seconds} seconds</strong>
@@ -369,6 +476,9 @@ export default function App() {
                 {tanpuraOn ? 'On' : 'Off'}
               </button>
             </div>
+            <p className="credit">
+              C# tanpura by iternetcone on Freesound, CC BY 4.0.
+            </p>
             <div className="setting">
               <p>Finish</p>
               <div className="swatches">

@@ -4,5 +4,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: './',
-  server: { host: true, port: 5174 },
+  server: {
+    host: true,
+    port: 5174,
+    watch: { ignored: ['**/tanpura-c-sharp.mp3'] },
+  },
 })

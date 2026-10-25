@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision'
-import { scoreTree, stepHold } from './treeScore'
+import { scoreAsana } from './poseScore'
+import { stepHold } from './treeScore'
 
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task'
 const WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm'
@@ -68,16 +69,21 @@ function drawScene(ctx, video, landmarks, matched) {
   ctx.restore()
 }
 
-export default function Session({ music, onToggleMusic, onExit, onOpenSettings, holdMs, dotColor, onHeldChange }) {
+export default function Session({ pose, step = 0, position, onComplete, music, onToggleMusic, onExit, onOpenSettings, holdMs, dotColor, onHeldChange }) {
+  const wasHeldRef = useRef(false)
+  const completeRef = useRef(onComplete)
+  completeRef.current = onComplete
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const holdRef = useRef({ holdMs: 0, missMs: 0 })
   const limitRef = useRef(holdMs)
   const dotRef = useRef(dotColor)
   const heldChangeRef = useRef(onHeldChange)
+  const poseRef = useRef(pose)
   limitRef.current = holdMs
   dotRef.current = dotColor
   heldChangeRef.current = onHeldChange
+  poseRef.current = pose
   const [status, setStatus] = useState('loading')
   const [detail, setDetail] = useState('')
   const [view, setView] = useState({
@@ -97,7 +103,7 @@ export default function Session({ music, onToggleMusic, onExit, onOpenSettings, 
     let stream
     let last = performance.now()
     let clock = 0
-    let wasHeld = false
+    wasHeldRef.current = false
     holdRef.current = { holdMs: 0, missMs: 0 }
 
     async function start() {
@@ -145,11 +151,11 @@ export default function Session({ music, onToggleMusic, onExit, onOpenSettings, 
           clock = Math.max(clock + 1, now)
           const found = landmarker.detectForVideo(video, clock)
           const landmarks = found?.landmarks?.[0] || null
-          const scored = scoreTree(landmarks)
+          const scored = scoreAsana(poseRef.current.id, landmarks)
           const next = stepHold(holdRef.current.holdMs, holdRef.current.missMs, scored.matched, dt, limitRef.current)
           holdRef.current = { holdMs: next.holdMs, missMs: next.missMs }
-          if (next.matched !== wasHeld) {
-            wasHeld = next.matched
+          if (next.matched !== wasHeldRef.current) {
+            wasHeldRef.current = next.matched
             heldChangeRef.current?.(next.matched)
           }
           drawScene(ctx, video, landmarks, next.matched, dotRef.current)
@@ -174,6 +180,19 @@ export default function Session({ music, onToggleMusic, onExit, onOpenSettings, 
     }
   }, [])
 
+  useEffect(() => {
+    holdRef.current = { holdMs: 0, missMs: 0 }
+    setView({ holdMs: 0, matched: false, visible: false, done: false })
+    wasHeldRef.current = false
+    heldChangeRef.current?.(false)
+  }, [pose.id, step])
+
+  useEffect(() => {
+    if (!view.done || !completeRef.current) return undefined
+    const timer = setTimeout(() => completeRef.current?.(), 1400)
+    return () => clearTimeout(timer)
+  }, [view.done, pose.id, step])
+
   const total = Math.max(1, Math.round(holdMs / 1000))
   const seconds = (view.holdMs / 1000).toFixed(1)
   const progress = Math.min(100, (view.holdMs / holdMs) * 100)
@@ -190,9 +209,11 @@ export default function Session({ music, onToggleMusic, onExit, onOpenSettings, 
       <header className="practice-top">
         <button className="text-button" type="button" onClick={onExit}>Back</button>
         <div className="practice-heading">
-          <p className="sanskrit small">वृक्षासन</p>
-          <h1 className="metallic-heading">Vrikshasanam</h1>
-          <p className="subtitle">the tree pose</p>
+          <p className="sanskrit small">{pose.hi}</p>
+          <h1 className="metallic-heading">{pose.name}</h1>
+          <p className="subtitle">
+            {position ? `${pose.en} • ${position.index} of ${position.total}` : pose.en}
+          </p>
         </div>
         <div className="header-actions">
           <button className="text-button" type="button" onClick={onToggleMusic}>
@@ -215,7 +236,7 @@ export default function Session({ music, onToggleMusic, onExit, onOpenSettings, 
           <canvas ref={canvasRef} className="camera" />
         </div>
         <figure className="portrait practice-portrait">
-          <img src="./tree.jpg" alt="Reference for Vrikshasanam" />
+          <img src={`${import.meta.env.BASE_URL}${pose.image}`} alt={`Reference for ${pose.name}`} />
           <figcaption>Copy this pose</figcaption>
         </figure>
       </div>
